@@ -1,78 +1,39 @@
+// routes/generate.js
 const express = require('express');
-const axios = require('axios');
-const { body, validationResult } = require('express-validator');
-
 const router = express.Router();
+const axios = require('axios');
 
-router.post(
-  '/',
-  body('text').isString().trim().isLength({ min: 5, max: 300 }).escape(),
-  async (req, res) => {
-    // 🔐 Validate input
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ error: 'Invalid input' });
-    }
+router.post('/generate', async (req, res) => {
+  const { text } = req.body;
+  const apiKey = process.env.ANTHROPIC_API_KEY;
 
-    const { text } = req.body;
-
-    try {
-      const openaiRes = await axios.post(
-        'https://api.openai.com/v1/chat/completions',
-        {
-          model: 'gpt-4',
-          messages: [
-            {
-              role: 'system',
-              content: 'You are an assistant that helps write viral social media content.',
-            },
-            {
-              role: 'user',
-              content: `Create the following from this idea: "${text}"\n
-              - A scroll-stopping TikTok hook (1 sentence)\n
-              - An Instagram caption\n
-              - A YouTube Shorts title\n
-              - 5 trending hashtags`,
-            },
-          ],
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-            'Content-Type': 'application/json',
-          },
+  try {
+    const response = await axios.post(
+      'https://api.anthropic.com/v1/messages',
+      {
+        model: 'claude-3-sonnet-20240229', // or haiku / opus
+        max_tokens: 200,
+        temperature: 0.7,
+        system: "You are a creative social media assistant that writes engaging and viral captions.",
+        messages: [
+          { role: 'user', content: `Generate a viral social media caption for: ${text}` }
+        ]
+      },
+      {
+        headers: {
+          'x-api-key': apiKey,
+          'anthropic-version': '2023-06-01',
+          'Content-Type': 'application/json'
         }
-      );
+      }
+    );
 
-      const response = openaiRes.data.choices[0].message.content;
-
-      // Parse the output into sections
-      const output = parseAIResponse(response);
-
-      res.json(output);
-    } catch (err) {
-      console.error('OpenAI API error:', err.response?.data || err.message);
-      res.status(500).json({ error: 'Failed to generate captions' });
-    }
+    const message = response.data?.content?.[0]?.text || 'No response';
+    res.json({ caption: message });
+  } catch (error) {
+    console.error(error.response?.data || error.message);
+    res.status(500).json({ error: 'Failed to generate caption' });
   }
-);
-
-// 🧠 Parse AI Response
-function parseAIResponse(text) {
-  const lines = text.split('\n').map((l) => l.trim()).filter(Boolean);
-
-  let hook = '', caption = '', title = '', hashtags = [];
-
-  lines.forEach((line) => {
-    if (line.toLowerCase().includes('hook')) hook = line.split(':')[1]?.trim() || line;
-    if (line.toLowerCase().includes('caption')) caption = line.split(':')[1]?.trim() || line;
-    if (line.toLowerCase().includes('title')) title = line.split(':')[1]?.trim() || line;
-    if (line.toLowerCase().includes('hashtag')) {
-      hashtags = line.replace(/.*:/, '').trim().split(/\s+/);
-    }
-  });
-
-  return { hook, caption, title, hashtags };
-}
+});
 
 module.exports = router;
