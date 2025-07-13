@@ -1,38 +1,39 @@
-// routes/generate.js
-const express = require('express');
+const express = require("express");
 const router = express.Router();
-const axios = require('axios');
+const axios = require("axios");
 
-router.post('/generate', async (req, res) => {
-  const { text } = req.body;
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-
+router.post("/", async (req, res) => {
   try {
+    const { topic } = req.body;
+
+    if (!topic) {
+      return res.status(400).json({ error: "Topic is required" });
+    }
+
     const response = await axios.post(
-      'https://api.anthropic.com/v1/messages',
+      "https://api.openai.com/v1/chat/completions",
       {
-        model: 'claude-3-sonnet-20240229', // or haiku / opus
-        max_tokens: 200,
-        temperature: 0.7,
-        system: "You are a creative social media assistant that writes engaging and viral captions.",
+        model: "gpt-3.5-turbo",
         messages: [
-          { role: 'user', content: `Generate a viral social media caption for: ${text}` }
-        ]
+          {
+            role: "user",
+            content: `Generate a viral caption about: ${topic}`,
+          },
+        ],
       },
       {
         headers: {
-          'x-api-key': apiKey,
-          'anthropic-version': '2023-06-01',
-          'Content-Type': 'application/json'
-        }
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+        },
       }
     );
 
-    const message = response.data?.content?.[0]?.text || 'No response';
-    res.json({ caption: message });
-  } catch (error) {
-    console.error(error.response?.data || error.message);
-    res.status(500).json({ error: 'Failed to generate caption' });
+    const caption = response.data.choices[0].message.content.trim();
+    res.json({ caption });
+  } catch (err) {
+    console.error("Error generating caption:", err.message);
+    res.status(500).json({ error: "Failed to generate caption" });
   }
 });
 
