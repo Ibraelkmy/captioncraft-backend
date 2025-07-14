@@ -11,16 +11,11 @@ router.post("/", async (req, res) => {
     }
 
     const response = await axios.post(
-      "https://api.anthropic.com/v1/messages",
+      "https://api.anthropic.com/v1/complete",
       {
-        model: "claude-3-opus-20240229",
+        model: "claude-sonnet-4-20250514", // or your Claude model
+        prompt: `Generate a viral caption about: ${topic}`,
         max_tokens: 100,
-        messages: [
-          {
-            role: "user",
-            content: `Generate a viral caption about: ${topic}`,
-          },
-        ],
       },
       {
         headers: {
@@ -31,7 +26,7 @@ router.post("/", async (req, res) => {
       }
     );
 
-    const caption = response.data.content[0].text.trim();
+    const caption = response.data.completion.trim();
     res.json({ caption });
   } catch (err) {
     console.error("Error generating caption:", err.message);

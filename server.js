@@ -24,7 +24,7 @@ const limiter = rateLimit({
 app.use(limiter);
 
 // Route
-app.use("/api/generate", generateRoute);
+app.use("/api/generate", require("./routes/generate"));
 
 // Default route for other paths
 app.use("*", (req, res) => {
