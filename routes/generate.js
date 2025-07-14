@@ -11,9 +11,10 @@ router.post("/", async (req, res) => {
     }
 
     const response = await axios.post(
-      "https://api.openai.com/v1/chat/completions",
+      "https://api.anthropic.com/v1/messages",
       {
-        model: "gpt-3.5-turbo",
+        model: "claude-3-opus-20240229",
+        max_tokens: 100,
         messages: [
           {
             role: "user",
@@ -24,12 +25,13 @@ router.post("/", async (req, res) => {
       {
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
+          "x-api-key": process.env.ANTHROPIC_API_KEY,
+          "anthropic-version": "2023-06-01",
         },
       }
     );
 
-    const caption = response.data.choices[0].message.content.trim();
+    const caption = response.data.content[0].text.trim();
     res.json({ caption });
   } catch (err) {
     console.error("Error generating caption:", err.message);
