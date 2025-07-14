@@ -16,17 +16,17 @@ app.use(express.json());
 app.use(helmet());
 app.use(xss());
 
-// Rate limiter to prevent abuse
+// Rate limiter
 const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 min
-  max: 100, // limit each IP
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100,
 });
 app.use(limiter);
 
-// Route
-app.use("/api/generate", require("./routes/generate"));
+// ✅ Use the imported route directly
+app.use("/api/generate", generateRoute);
 
-// Default route for other paths
+// Catch-all
 app.use("*", (req, res) => {
   res.status(404).json({ error: "Route not found" });
 });
